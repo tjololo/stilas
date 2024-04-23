@@ -1,0 +1,4 @@
+## Append samples of your project ##
+resources:
+- gcp_v1_cloudrun.yaml
+#+kubebuilder:scaffold:manifestskustomizesamples

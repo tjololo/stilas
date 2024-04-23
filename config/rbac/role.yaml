@@ -1,0 +1,32 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - gcp.stilas.418.cloud
+  resources:
+  - cloudruns
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - gcp.stilas.418.cloud
+  resources:
+  - cloudruns/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - gcp.stilas.418.cloud
+  resources:
+  - cloudruns/status
+  verbs:
+  - get
+  - patch
+  - update

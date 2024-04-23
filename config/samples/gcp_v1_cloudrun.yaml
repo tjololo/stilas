@@ -1,0 +1,9 @@
+apiVersion: gcp.stilas.418.cloud/v1
+kind: CloudRun
+metadata:
+  labels:
+    app.kubernetes.io/name: stilas
+    app.kubernetes.io/managed-by: kustomize
+  name: cloudrun-sample
+spec:
+  # TODO(user): Add fields here
