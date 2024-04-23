@@ -35,7 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	gcpv1 "github.com/tjololo/stilas/api/gcp/v1"
-	"github.com/tjololo/stilas/internal/controller/gcp"
+	controllergcp "github.com/tjololo/stilas/internal/controller/gcp"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -122,7 +122,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controller.CloudRunReconciler{
+	if err = (&controllergcp.CloudRunReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
