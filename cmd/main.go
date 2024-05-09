@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	gcprun "cloud.google.com/go/run/apiv2"
 	"crypto/tls"
 	"flag"
 	"os"
@@ -26,6 +25,7 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	gcprun "cloud.google.com/go/run/apiv2"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"

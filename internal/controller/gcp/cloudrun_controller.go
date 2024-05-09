@@ -17,18 +17,19 @@ limitations under the License.
 package controller
 
 import (
-	gcprun "cloud.google.com/go/run/apiv2"
-	runpb "cloud.google.com/go/run/apiv2/runpb"
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
+	gcprun "cloud.google.com/go/run/apiv2"
+	"cloud.google.com/go/run/apiv2/runpb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"time"
 
 	gcpv1 "github.com/tjololo/stilas/api/gcp/v1"
 )
@@ -118,7 +119,7 @@ func (r *CloudRunReconciler) createRunService(ctx context.Context, cloudRun gcpv
 	if err != nil {
 		return nil, fmt.Errorf("failed to create cloud run client: %w", err)
 	}
-	defer c.Close()
+	defer c.Close() // nolint: errcheck
 	runService := runpb.CreateServiceRequest{
 		Parent: fmt.Sprintf("projects/%s/locations/%s", cloudRun.Spec.ProjectID, cloudRun.Spec.Location),
 		Service: &runpb.Service{
@@ -151,28 +152,12 @@ func (r *CloudRunReconciler) createRunService(ctx context.Context, cloudRun gcpv
 	return crs, nil
 }
 
-func (r *CloudRunReconciler) getRunService(ctx context.Context, cloudRun gcpv1.CloudRun) (*runpb.Service, error) {
-	c, err := r.NewClient(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create cloud run client: %w", err)
-	}
-	defer c.Close()
-	req := &runpb.GetServiceRequest{
-		Name: cloudRun.Spec.Name,
-	}
-	srv, err := c.GetService(ctx, req)
-	if err != nil {
-		return nil, fmt.Errorf("GetService: failed to get cloud run service: %w", err)
-	}
-	return srv, nil
-}
-
 func (r *CloudRunReconciler) checkRunOperationStatus(ctx context.Context, cloudRun gcpv1.CloudRun) (*runpb.Service, error) {
 	c, err := r.NewClient(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create cloud run client: %w", err)
 	}
-	defer c.Close()
+	defer c.Close() // nolint: errcheck
 	crs := c.CreateServiceOperation(cloudRun.Status.OperationsName)
 	srv, err := crs.Poll(ctx)
 	if err != nil {
