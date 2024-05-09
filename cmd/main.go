@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	gcprun "cloud.google.com/go/run/apiv2"
 	"crypto/tls"
 	"flag"
 	"os"
@@ -123,8 +124,9 @@ func main() {
 	}
 
 	if err = (&controllergcp.CloudRunReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:    mgr.GetClient(),
+		Scheme:    mgr.GetScheme(),
+		NewClient: gcprun.NewServicesClient,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "CloudRun")
 		os.Exit(1)

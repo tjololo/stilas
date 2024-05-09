@@ -39,13 +39,95 @@ spec:
           spec:
             description: CloudRunSpec defines the desired state of CloudRun
             properties:
-              foo:
-                description: Foo is an example field of CloudRun. Edit cloudrun_types.go
-                  to remove/update
+              containers:
+                description: Image is the container image to deploy
+                example: gcr.io/my-project/my-image
+                items:
+                  description: CloudRunContainer defines the container configuration
+                    for a Cloud Run service
+                  properties:
+                    image:
+                      description: Image is the container image to deploy
+                      example: gcr.io/my-project/my-image
+                      type: string
+                    name:
+                      description: Name is the name of the container
+                      example: my-container
+                      type: string
+                    port:
+                      description: Port is the port the container listens on
+                      example: 8080
+                      format: int32
+                      type: integer
+                  required:
+                  - image
+                  - name
+                  type: object
+                type: array
+              location:
+                description: Location is the location of the Cloud Run service
+                example: us-central1
                 type: string
+              name:
+                description: Name is the name of the Cloud Run service
+                example: my-service
+                type: string
+              projectID:
+                description: ProjectID id of the gcp project
+                example: my-project
+                type: string
+              traffic:
+                description: Traffic is the percentage of traffic to send to this
+                  service
+                items:
+                  description: CloudRunTraffic defines the traffic configuration for
+                    a Cloud Run service
+                  properties:
+                    latestRevision:
+                      default: false
+                      description: LatestRevision is a flag to indicate if this is
+                        the latest revision
+                      example: true
+                      type: boolean
+                    percent:
+                      description: Percent is the percentage of traffic to send to
+                        this revision
+                      example: 50
+                      type: integer
+                    revision:
+                      description: Revision is the name of the revision
+                      example: my-revision
+                      type: string
+                  required:
+                  - latestRevision
+                  - percent
+                  type: object
+                type: array
+            required:
+            - containers
+            - location
+            - name
+            - projectID
             type: object
           status:
             description: CloudRunStatus defines the observed state of CloudRun
+            properties:
+              done:
+                description: |-
+                  INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+                  Important: Run "make" to regenerate code after modifying this file
+                type: boolean
+              operationsName:
+                type: string
+              success:
+                type: boolean
+              uri:
+                type: string
+            required:
+            - done
+            - operationsName
+            - success
+            - uri
             type: object
         type: object
     served: true

@@ -28,14 +28,76 @@ type CloudRunSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of CloudRun. Edit cloudrun_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	//Name is the name of the Cloud Run service
+	//+kubebuilder:example:=my-service
+	//+kubebuilder:validation:Required
+	Name string `json:"name"`
+
+	//Location is the location of the Cloud Run service
+	//+kubebuilder:example:=us-central1
+	//+kubebuilder:validation:Required
+	Location string `json:"location"`
+
+	//Image is the container image to deploy
+	//+kubebuilder:example:=gcr.io/my-project/my-image
+	//+kubebuilder:validation:Required
+	Containers []CloudRunContainer `json:"containers"`
+
+	//ProjectID id of the gcp project
+	//+kubebuilder:example:=my-project
+	//+kubebuilder:validation:Required
+	ProjectID string `json:"projectID"`
+
+	//Traffic is the percentage of traffic to send to this service
+	//+kubebuilder:validation:Optional
+	Traffic []CloudRunTraffic `json:"traffic"`
+}
+
+// CloudRunContainer defines the container configuration for a Cloud Run service
+type CloudRunContainer struct {
+	//Image is the container image to deploy
+	//+kubebuilder:example:=gcr.io/my-project/my-image
+	//+kubebuilder:validation:Required
+	Image string `json:"image"`
+
+	//Port is the port the container listens on
+	//+kubebuilder:example:=8080
+	//+kubebuilder:validation:Optional
+	Port int32 `json:"port"`
+
+	//Name is the name of the container
+	//+kubebuilder:example:=my-container
+	//+kubebuilder:validation:Required
+	Name string `json:"name"`
+}
+
+// CloudRunTraffic defines the traffic configuration for a Cloud Run service
+type CloudRunTraffic struct {
+	//Revision is the name of the revision
+	//+kubebuilder:example:=my-revision
+	//+kubebuilder:validation:Optional
+	Revision string `json:"revision"`
+
+	//Percent is the percentage of traffic to send to this revision
+	//+kubebuilder:example:=50
+	//+kubebuilder:validation:Required
+	Percent int `json:"percent"`
+
+	//LatestRevision is a flag to indicate if this is the latest revision
+	//+kubebuilder:example:=true
+	//+kubebuilder:validation:Required
+	//+kubebuilder:default:=false
+	LatestRevision bool `json:"latestRevision"`
 }
 
 // CloudRunStatus defines the observed state of CloudRun
 type CloudRunStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	Done           bool   `json:"done"`
+	OperationsName string `json:"operationsName"`
+	Success        bool   `json:"success"`
+	Uri            string `json:"uri"`
 }
 
 //+kubebuilder:object:root=true

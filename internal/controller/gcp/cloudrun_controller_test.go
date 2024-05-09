@@ -51,7 +51,17 @@ var _ = Describe("CloudRun Controller", func() {
 						Name:      resourceName,
 						Namespace: "default",
 					},
-					// TODO(user): Specify other spec details if needed.
+					Spec: gcpv1.CloudRunSpec{
+						Name:      "test",
+						Location:  "us-central1",
+						ProjectID: "test-project",
+						Containers: []gcpv1.CloudRunContainer{
+							{
+								Image: "gcr.io/test-project/test-image",
+								Name:  "test-container",
+							},
+						},
+					},
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
