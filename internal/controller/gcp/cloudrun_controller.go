@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"google.golang.org/api/option"
 	"time"
 
 	gcprun "cloud.google.com/go/run/apiv2"
@@ -37,8 +38,9 @@ import (
 // CloudRunReconciler reconciles a CloudRun object
 type CloudRunReconciler struct {
 	client.Client
-	Scheme    *runtime.Scheme
-	NewClient newCloudRunServiceClient
+	Scheme        *runtime.Scheme
+	NewClient     newCloudRunServiceClient
+	ClientOptions []option.ClientOption
 }
 
 //+kubebuilder:rbac:groups=gcp.stilas.418.cloud,resources=cloudruns,verbs=get;list;watch;create;update;patch;delete
@@ -57,7 +59,6 @@ type CloudRunReconciler struct {
 func (r *CloudRunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	// TODO(user): your logic here
 	var run gcpv1.CloudRun
 	if err := r.Client.Get(ctx, req.NamespacedName, &run); err != nil {
 		logger.Error(err, "unable to fetch CloudRun")
@@ -115,11 +116,13 @@ func (r *CloudRunReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *CloudRunReconciler) createRunService(ctx context.Context, cloudRun gcpv1.CloudRun) (*gcprun.CreateServiceOperation, error) {
-	c, err := r.NewClient(ctx)
+	c, err := r.getClient(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create cloud run client: %w", err)
 	}
-	defer c.Close() // nolint: errcheck
+	defer func(c *gcprun.ServicesClient) {
+		_ = c.Close()
+	}(c)
 	runService := runpb.CreateServiceRequest{
 		Parent: fmt.Sprintf("projects/%s/locations/%s", cloudRun.Spec.ProjectID, cloudRun.Spec.Location),
 		Service: &runpb.Service{
@@ -153,17 +156,23 @@ func (r *CloudRunReconciler) createRunService(ctx context.Context, cloudRun gcpv
 }
 
 func (r *CloudRunReconciler) checkRunOperationStatus(ctx context.Context, cloudRun gcpv1.CloudRun) (*runpb.Service, error) {
-	c, err := r.NewClient(ctx)
+	c, err := r.getClient(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create cloud run client: %w", err)
 	}
-	defer c.Close() // nolint: errcheck
+	defer func(c *gcprun.ServicesClient) {
+		_ = c.Close()
+	}(c)
 	crs := c.CreateServiceOperation(cloudRun.Status.OperationsName)
 	srv, err := crs.Poll(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("Poll: failed to poll cloud run operation: %w", err)
 	}
 	return srv, nil
+}
+
+func (r *CloudRunReconciler) getClient(ctx context.Context) (*gcprun.ServicesClient, error) {
+	return r.NewClient(ctx, r.ClientOptions...)
 }
 
 func isRunServiceAlreadyExistsError(err error) bool {

@@ -17,8 +17,15 @@ limitations under the License.
 package controller
 
 import (
+	"cloud.google.com/go/longrunning/autogen/longrunningpb"
+	gcprun "cloud.google.com/go/run/apiv2"
 	"context"
+	"google.golang.org/api/option"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"net"
 
+	"cloud.google.com/go/run/apiv2/runpb"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -29,6 +36,14 @@ import (
 
 	gcpv1 "github.com/tjololo/stilas/api/gcp/v1"
 )
+
+type fakeCloudRunServiceClient struct {
+	runpb.UnimplementedServicesServer
+}
+
+func (f *fakeCloudRunServiceClient) CreateService(_ context.Context, _ *runpb.CreateServiceRequest) (*longrunningpb.Operation, error) {
+	return &longrunningpb.Operation{Name: "test-operation", Done: true}, nil
+}
 
 var _ = Describe("CloudRun Controller", func() {
 	Context("When reconciling a resource", func() {
@@ -41,7 +56,7 @@ var _ = Describe("CloudRun Controller", func() {
 			Namespace: "default", // TODO(user):Modify as needed
 		}
 		cloudrun := &gcpv1.CloudRun{}
-
+		var fakeServerAddr string
 		BeforeEach(func() {
 			By("creating the custom resource for the Kind CloudRun")
 			err := k8sClient.Get(ctx, typeNamespacedName, cloudrun)
@@ -65,6 +80,20 @@ var _ = Describe("CloudRun Controller", func() {
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
+			By("Creating the fakeCloudRunServiceClient")
+			fakeCloudRunServiceClient := &fakeCloudRunServiceClient{}
+			l, err := net.Listen("tcp", "localhost:0")
+			if err != nil {
+				Fail("failed to listen")
+			}
+			gsrv := grpc.NewServer()
+			runpb.RegisterServicesServer(gsrv, fakeCloudRunServiceClient)
+			fakeServerAddr = l.Addr().String()
+			go func() {
+				if err := gsrv.Serve(l); err != nil {
+					panic(err)
+				}
+			}()
 		})
 
 		AfterEach(func() {
@@ -79,8 +108,14 @@ var _ = Describe("CloudRun Controller", func() {
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
 			controllerReconciler := &CloudRunReconciler{
-				Client: k8sClient,
-				Scheme: k8sClient.Scheme(),
+				Client:    k8sClient,
+				Scheme:    k8sClient.Scheme(),
+				NewClient: gcprun.NewServicesClient,
+				ClientOptions: []option.ClientOption{
+					option.WithEndpoint(fakeServerAddr),
+					option.WithoutAuthentication(),
+					option.WithGRPCDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
+				},
 			}
 
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
