@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"time"
 
+	"cloud.google.com/go/iam/apiv1/iampb"
 	gcprun "cloud.google.com/go/run/apiv2"
 	"cloud.google.com/go/run/apiv2/runpb"
 	"google.golang.org/api/option"
@@ -66,23 +67,48 @@ func (r *CloudRunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 	logger.Info(fmt.Sprintf("Reconciling CloudRun: %+v", run.Spec))
 	if run.Status.OperationsName == "" {
-		cr, err := r.createRunService(ctx, run)
+		srv, err := r.getRunService(ctx, run)
 		if err != nil {
-			if isRunServiceAlreadyExistsError(err) {
-				logger.Info("Cloud Run Service already exists")
-				return ctrl.Result{RequeueAfter: time.Minute}, nil
+			if isRunServiceNotFoundError(err) {
+				cr, err := r.createRunService(ctx, run)
+				if err != nil {
+					if isRunServiceAlreadyExistsError(err) {
+						logger.Info("Cloud Run Service already exists")
+						return ctrl.Result{RequeueAfter: time.Minute}, nil
+					}
+					logger.Error(err, "unable to create cloud run service")
+					return ctrl.Result{}, err
+				}
+				logger.Info(fmt.Sprintf("Created Cloud Run Service: %+v", cr))
+				run.Status = gcpv1.CloudRunStatus{
+					OperationsName: cr.Name(),
+					Done:           cr.Done(),
+				}
+				if err := r.Client.Status().Update(ctx, &run); err != nil {
+					logger.Error(err, "unable to update cloud run status")
+					return ctrl.Result{}, err
+				}
 			}
-			logger.Error(err, "unable to create cloud run service")
-			return ctrl.Result{}, err
-		}
-		logger.Info(fmt.Sprintf("Created Cloud Run Service: %+v", cr))
-		run.Status = gcpv1.CloudRunStatus{
-			OperationsName: cr.Name(),
-			Done:           cr.Done(),
-		}
-		if err := r.Client.Status().Update(ctx, &run); err != nil {
-			logger.Error(err, "unable to update cloud run status")
-			return ctrl.Result{}, err
+		} else {
+			if srv.Template.Containers[0].Image != run.Spec.Containers[0].Image {
+				srv.Template.Containers[0].Image = run.Spec.Containers[0].Image
+				cr, err := r.updateRunService(ctx, srv)
+				if err != nil {
+					if isRunServiceAlreadyExistsError(err) {
+						logger.Info("Cloud Run Service already exists")
+						return ctrl.Result{RequeueAfter: time.Minute}, nil
+					}
+					logger.Error(err, "unable to create cloud run service")
+					return ctrl.Result{}, err
+				}
+				logger.Info(fmt.Sprintf("Created Cloud Run Service: %+v", cr))
+				run.Status.OperationsName = cr.Name()
+				run.Status.Done = cr.Done()
+				if err := r.Client.Status().Update(ctx, &run); err != nil {
+					logger.Error(err, "unable to update cloud run status")
+					return ctrl.Result{}, err
+				}
+			}
 		}
 	} else if !run.Status.Done {
 		logger.Info(fmt.Sprintf("Cloud Run Service already created: %+v", run.Status.OperationsName))
@@ -98,6 +124,16 @@ func (r *CloudRunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			run.Status.Done = true
 			run.Status.OperationsName = ""
 			run.Status.Uri = srv.Uri
+			run.Status.LatestReadyRevision = srv.LatestReadyRevision
+			if run.Status.Revisions == nil {
+				run.Status.Revisions = make([]string, 0)
+			}
+			run.Status.Revisions = append(run.Status.Revisions, srv.LatestReadyRevision)
+			err = r.setIamPolicy(ctx, run)
+			if err != nil {
+				logger.Error(err, "unable to set iam policy")
+				return ctrl.Result{}, err
+			}
 			if err := r.Client.Status().Update(ctx, &run); err != nil {
 				logger.Error(err, "unable to update cloud run status")
 				return ctrl.Result{}, err
@@ -126,6 +162,7 @@ func (r *CloudRunReconciler) createRunService(ctx context.Context, cloudRun gcpv
 	runService := runpb.CreateServiceRequest{
 		Parent: fmt.Sprintf("projects/%s/locations/%s", cloudRun.Spec.ProjectID, cloudRun.Spec.Location),
 		Service: &runpb.Service{
+			Ingress: cloudRun.Spec.TrafficMode,
 			Template: &runpb.RevisionTemplate{
 				Containers: []*runpb.Container{
 					{
@@ -155,6 +192,23 @@ func (r *CloudRunReconciler) createRunService(ctx context.Context, cloudRun gcpv
 	return crs, nil
 }
 
+func (r *CloudRunReconciler) updateRunService(ctx context.Context, updatedService *runpb.Service) (*gcprun.UpdateServiceOperation, error) {
+	c, err := r.getClient(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create cloud run client: %w", err)
+	}
+	defer func(c *gcprun.ServicesClient) {
+		_ = c.Close()
+	}(c)
+	crs, err := c.UpdateService(ctx, &runpb.UpdateServiceRequest{
+		Service: updatedService,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("UpdateService: failed to update cloud run service: %w", err)
+	}
+	return crs, nil
+}
+
 func (r *CloudRunReconciler) checkRunOperationStatus(ctx context.Context, cloudRun gcpv1.CloudRun) (*runpb.Service, error) {
 	c, err := r.getClient(ctx)
 	if err != nil {
@@ -171,6 +225,51 @@ func (r *CloudRunReconciler) checkRunOperationStatus(ctx context.Context, cloudR
 	return srv, nil
 }
 
+func (r *CloudRunReconciler) getRunService(ctx context.Context, cloudRun gcpv1.CloudRun) (*runpb.Service, error) {
+	c, err := r.getClient(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create cloud run client: %w", err)
+	}
+	defer func(c *gcprun.ServicesClient) {
+		_ = c.Close()
+	}(c)
+	srv, err := c.GetService(ctx, &runpb.GetServiceRequest{
+		Name: fmt.Sprintf("projects/%s/locations/%s/services/%s", cloudRun.Spec.ProjectID, cloudRun.Spec.Location, cloudRun.Name),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("GetService: failed to get cloud run service: %w", err)
+	}
+	return srv, nil
+}
+
+func (r *CloudRunReconciler) setIamPolicy(ctx context.Context, cloudRun gcpv1.CloudRun) error {
+	c, err := r.getClient(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to create cloud run client: %w", err)
+	}
+	defer func(c *gcprun.ServicesClient) {
+		_ = c.Close()
+	}(c)
+
+	policyRequest := &iampb.SetIamPolicyRequest{
+		Resource: fmt.Sprintf("projects/%s/locations/%s/services/%s", cloudRun.Spec.ProjectID, cloudRun.Spec.Location, cloudRun.Name),
+		Policy: &iampb.Policy{
+			Bindings: []*iampb.Binding{
+				{
+					Role:    "roles/run.invoker",
+					Members: cloudRun.Spec.InvokeMembers,
+				},
+			},
+		},
+	}
+
+	_, err = c.SetIamPolicy(ctx, policyRequest)
+	if err != nil {
+		return fmt.Errorf("SetIamPolicy: failed to set iam policy: %w", err)
+	}
+	return nil
+}
+
 func (r *CloudRunReconciler) getClient(ctx context.Context) (*gcprun.ServicesClient, error) {
 	return r.NewClient(ctx, r.ClientOptions...)
 }
@@ -178,6 +277,13 @@ func (r *CloudRunReconciler) getClient(ctx context.Context) (*gcprun.ServicesCli
 func isRunServiceAlreadyExistsError(err error) bool {
 	if gs, ok := statusFromError(err); ok {
 		return gs.Code() == codes.AlreadyExists
+	}
+	return false
+}
+
+func isRunServiceNotFoundError(err error) bool {
+	if gs, ok := statusFromError(err); ok {
+		return gs.Code() == codes.NotFound
 	}
 	return false
 }

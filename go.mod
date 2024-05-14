@@ -3,6 +3,8 @@ module github.com/tjololo/stilas
 go 1.21
 
 require (
+	cloud.google.com/go/iam v1.1.7
+	cloud.google.com/go/longrunning v0.5.6
 	cloud.google.com/go/run v1.3.7
 	github.com/onsi/ginkgo/v2 v2.14.0
 	github.com/onsi/gomega v1.30.0
@@ -18,8 +20,6 @@ require (
 	cloud.google.com/go/auth v0.3.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.2 // indirect
 	cloud.google.com/go/compute/metadata v0.3.0 // indirect
-	cloud.google.com/go/iam v1.1.7 // indirect
-	cloud.google.com/go/longrunning v0.5.6 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect

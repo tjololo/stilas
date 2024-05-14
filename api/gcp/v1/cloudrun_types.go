@@ -17,6 +17,7 @@ limitations under the License.
 package v1
 
 import (
+	"cloud.google.com/go/run/apiv2/runpb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -51,6 +52,14 @@ type CloudRunSpec struct {
 	//Traffic is the percentage of traffic to send to this service
 	//+kubebuilder:validation:Optional
 	Traffic []CloudRunTraffic `json:"traffic"`
+
+	//+kubebuilder:validation:Optional
+	//+kubebuilder:default:=1
+	TrafficMode runpb.IngressTraffic `json:"trafficMode"`
+
+	//+kubebuilder:validation:Required
+	//+kubebuilder:default:={allUsers}
+	InvokeMembers []string `json:"invokeMembers,omitempty"`
 }
 
 // CloudRunContainer defines the container configuration for a Cloud Run service
@@ -92,12 +101,16 @@ type CloudRunTraffic struct {
 
 // CloudRunStatus defines the observed state of CloudRun
 type CloudRunStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-	Done           bool   `json:"done"`
-	OperationsName string `json:"operationsName"`
-	Success        bool   `json:"success"`
-	Uri            string `json:"uri"`
+	Done    bool `json:"done"`
+	Success bool `json:"success"`
+	//+kubebuilder:validation:Optional
+	OperationsName string `json:"operationsName,omitempty"`
+	//+kubebuilder:validation:Optional
+	Uri string `json:"uri,omitempty"`
+	//+kubebuilder:validation:Optional
+	LatestReadyRevision string `json:"latestReadyRevision,omitempty"`
+	//+kubebuilder:validation:Optional
+	Revisions []string `json:"revisions,omitempty"`
 }
 
 //+kubebuilder:object:root=true
