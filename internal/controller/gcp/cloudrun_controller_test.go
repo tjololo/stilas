@@ -17,17 +17,17 @@ limitations under the License.
 package controller
 
 import (
-	"cloud.google.com/go/longrunning/autogen/longrunningpb"
-	gcprun "cloud.google.com/go/run/apiv2"
 	"context"
-	"google.golang.org/api/option"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"net"
 
+	"cloud.google.com/go/longrunning/autogen/longrunningpb"
+	gcprun "cloud.google.com/go/run/apiv2"
 	"cloud.google.com/go/run/apiv2/runpb"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"google.golang.org/api/option"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"

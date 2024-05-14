@@ -20,11 +20,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"google.golang.org/api/option"
 	"time"
 
 	gcprun "cloud.google.com/go/run/apiv2"
 	"cloud.google.com/go/run/apiv2/runpb"
+	"google.golang.org/api/option"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/runtime"
