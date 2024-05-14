@@ -3,7 +3,7 @@ module github.com/tjololo/stilas
 go 1.21
 
 require (
-	cloud.google.com/go/iam v1.1.7
+	cloud.google.com/go/iam v1.1.8
 	cloud.google.com/go/longrunning v0.5.6
 	cloud.google.com/go/run v1.3.7
 	github.com/onsi/ginkgo/v2 v2.14.0
