@@ -123,23 +123,31 @@ spec:
           status:
             description: CloudRunStatus defines the observed state of CloudRun
             properties:
-              done:
-                type: boolean
               latestReadyRevision:
                 type: string
-              operationsName:
-                type: string
+              operations:
+                items:
+                  properties:
+                    done:
+                      type: boolean
+                    name:
+                      type: string
+                    operationType:
+                      type: string
+                  type: object
+                type: array
+              ready:
+                type: boolean
+              reconciling:
+                type: boolean
               revisions:
                 items:
                   type: string
                 type: array
-              success:
-                type: boolean
               uri:
                 type: string
             required:
-            - done
-            - success
+            - ready
             type: object
         type: object
     served: true

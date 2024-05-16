@@ -101,10 +101,11 @@ type CloudRunTraffic struct {
 
 // CloudRunStatus defines the observed state of CloudRun
 type CloudRunStatus struct {
-	Done    bool `json:"done"`
-	Success bool `json:"success"`
+	Ready bool `json:"ready"`
 	//+kubebuilder:validation:Optional
-	OperationsName string `json:"operationsName,omitempty"`
+	Reconciling bool `json:"reconciling"`
+	//+kubebuilder:validation:Optional
+	Operations []*CloudRunOperation `json:"operations"`
 	//+kubebuilder:validation:Optional
 	Uri string `json:"uri,omitempty"`
 	//+kubebuilder:validation:Optional
@@ -112,6 +113,23 @@ type CloudRunStatus struct {
 	//+kubebuilder:validation:Optional
 	Revisions []string `json:"revisions,omitempty"`
 }
+
+type CloudRunOperation struct {
+	//+kubebuilder:validation:Optional
+	Name string `json:"name"`
+	//+kubebuilder:validation:Optional
+	Done bool `json:"done"`
+	//+kubebuilder:validation:Optional
+	OperationType CloudRunOperationType `json:"operationType"`
+}
+
+type CloudRunOperationType string
+
+const (
+	CloudRunOperationType_Create CloudRunOperationType = "create"
+	CloudRunOperationType_Update CloudRunOperationType = "update"
+	CloudRunOperationType_Delete CloudRunOperationType = "delete"
+)
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
