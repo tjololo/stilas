@@ -1,16 +1,17 @@
 package controller
 
 import (
-	"cloud.google.com/go/run/apiv2/runpb"
 	"context"
 	"errors"
 	"fmt"
-	gcpv1 "github.com/tjololo/stilas/api/gcp/v1"
+
+	gcprun "cloud.google.com/go/run/apiv2"
+	"cloud.google.com/go/run/apiv2/runpb"
+	"google.golang.org/api/option"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	gcprun "cloud.google.com/go/run/apiv2"
-	"google.golang.org/api/option"
+	gcpv1 "github.com/tjololo/stilas/api/gcp/v1"
 )
 
 type newCloudRunServiceClient func(ctx context.Context, opts ...option.ClientOption) (*gcprun.ServicesClient, error)

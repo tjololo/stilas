@@ -17,10 +17,12 @@ limitations under the License.
 package controller
 
 import (
-	"cloud.google.com/go/iam/apiv1/iampb"
-	gcprun "cloud.google.com/go/run/apiv2"
 	"context"
 	"fmt"
+	"time"
+
+	"cloud.google.com/go/iam/apiv1/iampb"
+	gcprun "cloud.google.com/go/run/apiv2"
 	"google.golang.org/api/option"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -28,7 +30,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"time"
 
 	gcpv1 "github.com/tjololo/stilas/api/gcp/v1"
 )
@@ -92,7 +93,7 @@ func (r *CloudRunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			if !done {
 				allDone = false
 			}
-			updateOperationStatusByName(run, operation.Name, done)
+			updateOperationStatusByName(&run, operation.Name, done)
 		}
 		if err := r.Client.Status().Update(ctx, &run); err != nil {
 			logger.Error(err, "unable to update cloud run status")
@@ -105,6 +106,8 @@ func (r *CloudRunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		srv, err := r.getRunService(ctx, run)
 		if err == nil {
 			if srv.Template.Containers[0].Image != run.Spec.Containers[0].Image {
+				srv.Template.Containers[0].Image = run.Spec.Containers[0].Image
+				logger.Info(fmt.Sprintf("Image has changed, current image: %s, new image: %s", srv.Template.Containers[0].Image, run.Spec.Containers[0].Image))
 				cr, err := r.updateRunService(ctx, srv)
 				if err != nil {
 					logger.Error(err, "unable to update cloud run service")
@@ -119,7 +122,6 @@ func (r *CloudRunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 					logger.Error(err, "unable to update cloud run status")
 					return ctrl.Result{}, err
 				}
-				return ctrl.Result{}, nil
 			} else {
 				run.Status.Uri = srv.Uri
 				run.Status.LatestReadyRevision = srv.LatestReadyRevision
@@ -222,7 +224,7 @@ func (r *CloudRunReconciler) handleDeletion(ctx context.Context, cloudRun gcpv1.
 			if !done {
 				allDone = false
 			}
-			updateOperationStatusByName(cloudRun, operation.Name, done)
+			updateOperationStatusByName(&cloudRun, operation.Name, done)
 		}
 		if err := r.Client.Status().Update(ctx, &cloudRun); err != nil {
 			logger.Error(err, "unable to update cloud run status")
@@ -266,11 +268,10 @@ func getOperationsByType(operations []*gcpv1.CloudRunOperation, operationType gc
 	return &operationsOfType
 }
 
-func updateOperationStatusByName(cloudRun gcpv1.CloudRun, operationName string, done bool) *gcpv1.CloudRun {
+func updateOperationStatusByName(cloudRun *gcpv1.CloudRun, operationName string, done bool) {
 	for _, operation := range cloudRun.Status.Operations {
 		if operation.Name == operationName {
 			operation.Done = done
 		}
 	}
-	return &cloudRun
 }
