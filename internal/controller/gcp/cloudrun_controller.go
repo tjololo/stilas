@@ -176,7 +176,7 @@ func (r *CloudRunReconciler) setIamPolicy(ctx context.Context, cloudRun gcpv1.Cl
 	}(c)
 
 	policyRequest := &iampb.SetIamPolicyRequest{
-		Resource: fmt.Sprintf("projects/%s/locations/%s/services/%s", cloudRun.Spec.ProjectID, cloudRun.Spec.Location, cloudRun.Name),
+		Resource: cloudRun.GetGcpCloudRunServiceFullName(),
 		Policy: &iampb.Policy{
 			Bindings: []*iampb.Binding{
 				{

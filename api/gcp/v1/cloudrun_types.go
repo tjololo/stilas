@@ -78,6 +78,12 @@ type CloudRunContainer struct {
 	//+kubebuilder:example:=my-container
 	//+kubebuilder:validation:Required
 	Name string `json:"name"`
+
+	//+kubebuilder:validation:Optional
+	LivenessProbe *CloudRunProbe `json:"livenessProbe"`
+
+	//+kubebuilder:validation:Optional
+	StartupProbe *CloudRunProbe `json:"readinessProbe"`
 }
 
 // CloudRunTraffic defines the traffic configuration for a Cloud Run service
@@ -90,7 +96,7 @@ type CloudRunTraffic struct {
 	//Percent is the percentage of traffic to send to this revision
 	//+kubebuilder:example:=50
 	//+kubebuilder:validation:Required
-	Percent int `json:"percent"`
+	Percent int32 `json:"percent"`
 
 	//LatestRevision is a flag to indicate if this is the latest revision
 	//+kubebuilder:example:=true
@@ -98,6 +104,42 @@ type CloudRunTraffic struct {
 	//+kubebuilder:default:=false
 	LatestRevision bool `json:"latestRevision"`
 }
+
+type CloudRunProbe struct {
+	//+kubebuilder:validation:Required
+	ProbeSpec CloudRunProbeSpec `json:"probeSpec"`
+	//+kubebuilder:validation:Optional
+	//+kubebuilder:default:=0
+	InitialDelaySeconds int32 `json:"initialDelaySeconds"`
+	//+kubebuilder:validation:Optional
+	//+kubebuilder:default:=5
+	TimeoutSeconds int32 `json:"timeoutSeconds"`
+	//+kubebuilder:validation:Optional
+	//+kubebuilder:default:=10
+	PeriodSeconds int32 `json:"periodSeconds"`
+	//+kubebuilder:validation:Optional
+	//+kubebuilder:default:=3
+	FailureThreshold int32 `json:"failureThreshold"`
+}
+
+type CloudRunProbeSpec struct {
+	//+kubebuilder:validation:Required
+	ProbeType CloudRunProbeType `json:"probeType"`
+	//+kubebuilder:validation:Required
+	Port int32 `json:"port"`
+	//+kubebuilder:validation:Optional
+	Service *string `json:"service,omitempty"`
+	//+kubebuilder:validation:Optional
+	Path *string `json:"path,omitempty"`
+}
+
+type CloudRunProbeType string
+
+const (
+	CloudRunProbeType_HTTPGet   CloudRunProbeType = "HTTPGet"
+	CloudRunProbeType_TCPSocket CloudRunProbeType = "TCPSocket"
+	CloudRunProbeType_Grpc      CloudRunProbeType = "Grpc"
+)
 
 // CloudRunStatus defines the observed state of CloudRun
 type CloudRunStatus struct {

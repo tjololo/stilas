@@ -33,7 +33,7 @@ func (r *CloudRunReconciler) updateRunService(ctx context.Context, updatedServic
 	return crs, nil
 }
 
-func (r *CloudRunReconciler) getRunService(ctx context.Context, cloudRun gcpv1.CloudRun) (*runpb.Service, error) {
+func (r *CloudRunReconciler) getRunService(ctx context.Context, run gcpv1.CloudRun) (*runpb.Service, error) {
 	c, err := r.getClient(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create cloud run client: %w", err)
@@ -42,7 +42,7 @@ func (r *CloudRunReconciler) getRunService(ctx context.Context, cloudRun gcpv1.C
 		_ = c.Close()
 	}(c)
 	srv, err := c.GetService(ctx, &runpb.GetServiceRequest{
-		Name: fmt.Sprintf("projects/%s/locations/%s/services/%s", cloudRun.Spec.ProjectID, cloudRun.Spec.Location, cloudRun.Name),
+		Name: run.GetGcpCloudRunServiceFullName(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("GetService: failed to get cloud run service: %w", err)
@@ -74,33 +74,8 @@ func (r *CloudRunReconciler) createRunService(ctx context.Context, cloudRun gcpv
 	defer func(c *gcprun.ServicesClient) {
 		_ = c.Close()
 	}(c)
-	runService := runpb.CreateServiceRequest{
-		Parent: fmt.Sprintf("projects/%s/locations/%s", cloudRun.Spec.ProjectID, cloudRun.Spec.Location),
-		Service: &runpb.Service{
-			Ingress: cloudRun.Spec.TrafficMode,
-			Template: &runpb.RevisionTemplate{
-				Containers: []*runpb.Container{
-					{
-						Image: cloudRun.Spec.Containers[0].Image,
-						Name:  cloudRun.Spec.Containers[0].Name,
-						Ports: []*runpb.ContainerPort{
-							{
-								ContainerPort: cloudRun.Spec.Containers[0].Port,
-							},
-						},
-					},
-				},
-			},
-			Traffic: []*runpb.TrafficTarget{
-				{
-					Percent: 100,
-					Type:    runpb.TrafficTargetAllocationType_TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST,
-				},
-			},
-		},
-		ServiceId: cloudRun.Name,
-	}
-	crs, err := c.CreateService(ctx, &runService)
+	runService := cloudRun.ConvertToCreateServiceRequest()
+	crs, err := c.CreateService(ctx, runService)
 	if err != nil {
 		return nil, fmt.Errorf("CreateService: failed to create cloud run service: %w", err)
 	}
@@ -116,7 +91,7 @@ func (r *CloudRunReconciler) deleteRunService(ctx context.Context, run gcpv1.Clo
 		_ = c.Close()
 	}(c)
 	dso, err := c.DeleteService(ctx, &runpb.DeleteServiceRequest{
-		Name: fmt.Sprintf("projects/%s/locations/%s/services/%s", run.Spec.ProjectID, run.Spec.Location, run.Name),
+		Name: run.GetGcpCloudRunServiceFullName(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("DeleteService: failed to delete cloud run service: %w", err)

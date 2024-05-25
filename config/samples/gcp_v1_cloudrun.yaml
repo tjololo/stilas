@@ -9,10 +9,18 @@ spec:
   location: us-central1
   name: cloudrun-sample
   projectID: gcp-project
+  invokeMembers:
+    - allUsers
   containers:
     - image: us-docker.pkg.dev/cloudrun/container/hello
       name: hello
       port: 8080
+      livenessProbe:
+        probeSpec:
+          probeType: "HTTPGet"
+          port: 8080
+          path: "/"
+
   traffic:
     - percent: 100
       latestRevision: true

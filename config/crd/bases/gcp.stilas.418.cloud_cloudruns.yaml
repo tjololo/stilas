@@ -50,6 +50,42 @@ spec:
                       description: Image is the container image to deploy
                       example: gcr.io/my-project/my-image
                       type: string
+                    livenessProbe:
+                      properties:
+                        failureThreshold:
+                          default: 3
+                          format: int32
+                          type: integer
+                        initialDelaySeconds:
+                          default: 0
+                          format: int32
+                          type: integer
+                        periodSeconds:
+                          default: 10
+                          format: int32
+                          type: integer
+                        probeSpec:
+                          properties:
+                            path:
+                              type: string
+                            port:
+                              format: int32
+                              type: integer
+                            probeType:
+                              type: string
+                            service:
+                              type: string
+                          required:
+                          - port
+                          - probeType
+                          type: object
+                        timeoutSeconds:
+                          default: 5
+                          format: int32
+                          type: integer
+                      required:
+                      - probeSpec
+                      type: object
                     name:
                       description: Name is the name of the container
                       example: my-container
@@ -59,6 +95,42 @@ spec:
                       example: 8080
                       format: int32
                       type: integer
+                    readinessProbe:
+                      properties:
+                        failureThreshold:
+                          default: 3
+                          format: int32
+                          type: integer
+                        initialDelaySeconds:
+                          default: 0
+                          format: int32
+                          type: integer
+                        periodSeconds:
+                          default: 10
+                          format: int32
+                          type: integer
+                        probeSpec:
+                          properties:
+                            path:
+                              type: string
+                            port:
+                              format: int32
+                              type: integer
+                            probeType:
+                              type: string
+                            service:
+                              type: string
+                          required:
+                          - port
+                          - probeType
+                          type: object
+                        timeoutSeconds:
+                          default: 5
+                          format: int32
+                          type: integer
+                      required:
+                      - probeSpec
+                      type: object
                   required:
                   - image
                   - name
@@ -99,6 +171,7 @@ spec:
                       description: Percent is the percentage of traffic to send to
                         this revision
                       example: 50
+                      format: int32
                       type: integer
                     revision:
                       description: Revision is the name of the revision
