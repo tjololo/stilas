@@ -1,0 +1,23 @@
+name: Test, Vet and Lint
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+    test:
+      runs-on: ubuntu-latest
+      steps:
+      - uses: actions/checkout@v4
+      - name: Run tests
+        run: make test
+      - name: Vet
+        run: make vet
+      - name: Lint
+        run: make lint
