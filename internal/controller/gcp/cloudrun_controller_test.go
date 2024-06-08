@@ -67,7 +67,6 @@ var _ = Describe("CloudRun Controller", func() {
 						Namespace: "default",
 					},
 					Spec: gcpv1.CloudRunSpec{
-						Name:      "test",
 						Location:  "us-central1",
 						ProjectID: "test-project",
 						Containers: []gcpv1.CloudRunContainer{

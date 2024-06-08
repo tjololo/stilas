@@ -146,10 +146,6 @@ spec:
                 description: Location is the location of the Cloud Run service
                 example: us-central1
                 type: string
-              name:
-                description: Name is the name of the Cloud Run service
-                example: my-service
-                type: string
               projectID:
                 description: ProjectID id of the gcp project
                 example: my-project
@@ -190,7 +186,6 @@ spec:
             required:
             - containers
             - location
-            - name
             - projectID
             type: object
           status:

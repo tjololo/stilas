@@ -7,7 +7,6 @@ metadata:
   name: cloudrun-sample
 spec:
   location: us-central1
-  name: cloudrun-sample
   projectID: gcp-project
   invokeMembers:
     - allUsers

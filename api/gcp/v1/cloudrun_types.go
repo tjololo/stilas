@@ -29,11 +29,6 @@ type CloudRunSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	//Name is the name of the Cloud Run service
-	//+kubebuilder:example:=my-service
-	//+kubebuilder:validation:Required
-	Name string `json:"name"`
-
 	//Location is the location of the Cloud Run service
 	//+kubebuilder:example:=us-central1
 	//+kubebuilder:validation:Required
