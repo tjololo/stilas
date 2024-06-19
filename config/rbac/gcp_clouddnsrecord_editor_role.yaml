@@ -1,0 +1,27 @@
+# permissions for end users to edit clouddnsrecords.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: stilas
+    app.kubernetes.io/managed-by: kustomize
+  name: gcp-clouddnsrecord-editor-role
+rules:
+- apiGroups:
+  - gcp.stilas.418.cloud
+  resources:
+  - clouddnsrecords
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - gcp.stilas.418.cloud
+  resources:
+  - clouddnsrecords/status
+  verbs:
+  - get

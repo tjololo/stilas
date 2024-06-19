@@ -18,34 +18,40 @@ package gcp
 
 import (
 	"context"
-	"net"
 
-	"cloud.google.com/go/longrunning/autogen/longrunningpb"
-	gcprun "cloud.google.com/go/run/apiv2"
-	"cloud.google.com/go/run/apiv2/runpb"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"google.golang.org/api/option"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	gcpdns "google.golang.org/api/dns/v2"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	gcpv1 "github.com/tjololo/stilas/api/gcp/v1"
 )
 
-type fakeCloudRunServiceClient struct {
-	runpb.UnimplementedServicesServer
+type mockCloudDnsService struct {
 }
 
-func (f *fakeCloudRunServiceClient) CreateService(_ context.Context, _ *runpb.CreateServiceRequest) (*longrunningpb.Operation, error) {
-	return &longrunningpb.Operation{Name: "test-operation", Done: true}, nil
+func (m *mockCloudDnsService) GetZone(_ context.Context, _ string, _ string) (*gcpdns.ManagedZone, error) {
+	return &gcpdns.ManagedZone{
+		Name:    "test-zone",
+		DnsName: "test-dns-name",
+	}, nil
 }
 
-var _ = Describe("CloudRun Controller", func() {
+func (m *mockCloudDnsService) CreateZone(_ context.Context, _ string, _ *gcpdns.ManagedZone) (*gcpdns.ManagedZone, error) {
+	return &gcpdns.ManagedZone{
+		Name:    "test-zone",
+		DnsName: "test-dns-name",
+	}, nil
+}
+
+func (m *mockCloudDnsService) DeleteZone(_ context.Context, _ string, _ string) error {
+	return nil
+}
+
+var _ = Describe("CloudDnsZone Controller", func() {
 	Context("When reconciling a resource", func() {
 		const resourceName = "test-resource"
 
@@ -55,66 +61,39 @@ var _ = Describe("CloudRun Controller", func() {
 			Name:      resourceName,
 			Namespace: "default", // TODO(user):Modify as needed
 		}
-		cloudrun := &gcpv1.CloudRun{}
-		var fakeServerAddr string
+		clouddnszone := &gcpv1.CloudDnsZone{}
+
 		BeforeEach(func() {
-			By("creating the custom resource for the Kind CloudRun")
-			err := k8sClient.Get(ctx, typeNamespacedName, cloudrun)
+			By("creating the custom resource for the Kind CloudDnsZone")
+			err := k8sClient.Get(ctx, typeNamespacedName, clouddnszone)
 			if err != nil && errors.IsNotFound(err) {
-				resource := &gcpv1.CloudRun{
+				resource := &gcpv1.CloudDnsZone{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: "default",
 					},
-					Spec: gcpv1.CloudRunSpec{
-						Location:  "us-central1",
-						ProjectID: "test-project",
-						Containers: []gcpv1.CloudRunContainer{
-							{
-								Image: "gcr.io/test-project/test-image",
-								Name:  "test-container",
-							},
-						},
-					},
+					// TODO(user): Specify other spec details if needed.
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
 			By("Creating the fakeCloudRunServiceClient")
-			fakeCloudRunServiceClient := &fakeCloudRunServiceClient{}
-			l, err := net.Listen("tcp", "localhost:0")
-			if err != nil {
-				Fail("failed to listen")
-			}
-			gsrv := grpc.NewServer()
-			runpb.RegisterServicesServer(gsrv, fakeCloudRunServiceClient)
-			fakeServerAddr = l.Addr().String()
-			go func() {
-				if err := gsrv.Serve(l); err != nil {
-					panic(err)
-				}
-			}()
 		})
 
 		AfterEach(func() {
 			// TODO(user): Cleanup logic after each test, like removing the resource instance.
-			resource := &gcpv1.CloudRun{}
+			resource := &gcpv1.CloudDnsZone{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
 
-			By("Cleanup the specific resource instance CloudRun")
+			By("Cleanup the specific resource instance CloudDnsZone")
 			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
 		})
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
-			controllerReconciler := &CloudRunReconciler{
-				Client:    k8sClient,
-				Scheme:    k8sClient.Scheme(),
-				NewClient: gcprun.NewServicesClient,
-				ClientOptions: []option.ClientOption{
-					option.WithEndpoint(fakeServerAddr),
-					option.WithoutAuthentication(),
-					option.WithGRPCDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
-				},
+			controllerReconciler := &CloudDnsZoneReconciler{
+				Client:          k8sClient,
+				Scheme:          k8sClient.Scheme(),
+				CloudDnsService: &mockCloudDnsService{},
 			}
 
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{

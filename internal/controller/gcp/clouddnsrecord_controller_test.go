@@ -18,16 +18,9 @@ package gcp
 
 import (
 	"context"
-	"net"
 
-	"cloud.google.com/go/longrunning/autogen/longrunningpb"
-	gcprun "cloud.google.com/go/run/apiv2"
-	"cloud.google.com/go/run/apiv2/runpb"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"google.golang.org/api/option"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -37,15 +30,7 @@ import (
 	gcpv1 "github.com/tjololo/stilas/api/gcp/v1"
 )
 
-type fakeCloudRunServiceClient struct {
-	runpb.UnimplementedServicesServer
-}
-
-func (f *fakeCloudRunServiceClient) CreateService(_ context.Context, _ *runpb.CreateServiceRequest) (*longrunningpb.Operation, error) {
-	return &longrunningpb.Operation{Name: "test-operation", Done: true}, nil
-}
-
-var _ = Describe("CloudRun Controller", func() {
+var _ = Describe("CloudDnsRecord Controller", func() {
 	Context("When reconciling a resource", func() {
 		const resourceName = "test-resource"
 
@@ -55,66 +40,37 @@ var _ = Describe("CloudRun Controller", func() {
 			Name:      resourceName,
 			Namespace: "default", // TODO(user):Modify as needed
 		}
-		cloudrun := &gcpv1.CloudRun{}
-		var fakeServerAddr string
+		clouddnsrecord := &gcpv1.CloudDnsRecord{}
+
 		BeforeEach(func() {
-			By("creating the custom resource for the Kind CloudRun")
-			err := k8sClient.Get(ctx, typeNamespacedName, cloudrun)
+			By("creating the custom resource for the Kind CloudDnsRecord")
+			err := k8sClient.Get(ctx, typeNamespacedName, clouddnsrecord)
 			if err != nil && errors.IsNotFound(err) {
-				resource := &gcpv1.CloudRun{
+				resource := &gcpv1.CloudDnsRecord{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: "default",
 					},
-					Spec: gcpv1.CloudRunSpec{
-						Location:  "us-central1",
-						ProjectID: "test-project",
-						Containers: []gcpv1.CloudRunContainer{
-							{
-								Image: "gcr.io/test-project/test-image",
-								Name:  "test-container",
-							},
-						},
-					},
+					// TODO(user): Specify other spec details if needed.
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
-			By("Creating the fakeCloudRunServiceClient")
-			fakeCloudRunServiceClient := &fakeCloudRunServiceClient{}
-			l, err := net.Listen("tcp", "localhost:0")
-			if err != nil {
-				Fail("failed to listen")
-			}
-			gsrv := grpc.NewServer()
-			runpb.RegisterServicesServer(gsrv, fakeCloudRunServiceClient)
-			fakeServerAddr = l.Addr().String()
-			go func() {
-				if err := gsrv.Serve(l); err != nil {
-					panic(err)
-				}
-			}()
 		})
 
 		AfterEach(func() {
 			// TODO(user): Cleanup logic after each test, like removing the resource instance.
-			resource := &gcpv1.CloudRun{}
+			resource := &gcpv1.CloudDnsRecord{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
 
-			By("Cleanup the specific resource instance CloudRun")
+			By("Cleanup the specific resource instance CloudDnsRecord")
 			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
 		})
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
-			controllerReconciler := &CloudRunReconciler{
-				Client:    k8sClient,
-				Scheme:    k8sClient.Scheme(),
-				NewClient: gcprun.NewServicesClient,
-				ClientOptions: []option.ClientOption{
-					option.WithEndpoint(fakeServerAddr),
-					option.WithoutAuthentication(),
-					option.WithGRPCDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
-				},
+			controllerReconciler := &CloudDnsRecordReconciler{
+				Client: k8sClient,
+				Scheme: k8sClient.Scheme(),
 			}
 
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{

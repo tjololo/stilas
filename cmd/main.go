@@ -23,12 +23,12 @@ import (
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
 	gcprun "cloud.google.com/go/run/apiv2"
+	gcpdns "google.golang.org/api/dns/v2"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -37,6 +37,8 @@ import (
 
 	gcpv1 "github.com/tjololo/stilas/api/gcp/v1"
 	controllergcp "github.com/tjololo/stilas/internal/controller/gcp"
+	gcpcontroller "github.com/tjololo/stilas/internal/controller/gcp"
+	"github.com/tjololo/stilas/internal/services/gcp"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -129,6 +131,23 @@ func main() {
 		NewClient: gcprun.NewServicesClient,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "CloudRun")
+		os.Exit(1)
+	}
+	if err = (&gcpcontroller.CloudDnsZoneReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+		CloudDnsService: &gcp.CloudDnsServiceImpl{
+			NewService: gcpdns.NewService,
+		},
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "CloudDnsZone")
+		os.Exit(1)
+	}
+	if err = (&gcpcontroller.CloudDnsRecordReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "CloudDnsRecord")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

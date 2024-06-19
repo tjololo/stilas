@@ -7,6 +7,58 @@ rules:
 - apiGroups:
   - gcp.stilas.418.cloud
   resources:
+  - clouddnsrecords
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - gcp.stilas.418.cloud
+  resources:
+  - clouddnsrecords/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - gcp.stilas.418.cloud
+  resources:
+  - clouddnsrecords/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - gcp.stilas.418.cloud
+  resources:
+  - clouddnszones
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - gcp.stilas.418.cloud
+  resources:
+  - clouddnszones/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - gcp.stilas.418.cloud
+  resources:
+  - clouddnszones/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - gcp.stilas.418.cloud
+  resources:
   - cloudruns
   verbs:
   - create

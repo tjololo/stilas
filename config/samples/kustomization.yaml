@@ -1,4 +1,6 @@
 ## Append samples of your project ##
 resources:
 - gcp_v1_cloudrun.yaml
+- gcp_v1_clouddnszone.yaml
+- gcp_v1_clouddnsrecord.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples

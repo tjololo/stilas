@@ -18,4 +18,22 @@ resources:
   kind: CloudRun
   path: github.com/tjololo/stilas/api/v1
   version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: stilas.418.cloud
+  group: gcp
+  kind: CloudDnsZone
+  path: github.com/tjololo/stilas/api/gcp/v1
+  version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: stilas.418.cloud
+  group: gcp
+  kind: CloudDnsRecord
+  path: github.com/tjololo/stilas/api/gcp/v1
+  version: v1
 version: "3"

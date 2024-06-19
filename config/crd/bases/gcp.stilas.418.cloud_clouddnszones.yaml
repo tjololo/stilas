@@ -1,0 +1,97 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.14.0
+  name: clouddnszones.gcp.stilas.418.cloud
+spec:
+  group: gcp.stilas.418.cloud
+  names:
+    kind: CloudDnsZone
+    listKind: CloudDnsZoneList
+    plural: clouddnszones
+    singular: clouddnszone
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: CloudDnsZone is the Schema for the clouddnszones API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: CloudDnsZoneSpec defines the desired state of CloudDnsZone
+            properties:
+              cleanupOnDelete:
+                default: false
+                description: CleanupOnDelete defines if the zone should be deleted
+                  when the resource is deleted
+                type: boolean
+              dnsName:
+                description: DnsName defines the name of the zone. Must be a valid
+                  DNS name
+                type: string
+              dnsSecSpec:
+                description: DnsSecSpec defines the DNSSEC configuration for the zone
+                properties:
+                  nonExistence:
+                    default: true
+                    description: NonExistence defines if the NSEC3 record should be
+                      included in the response
+                    type: boolean
+                  state:
+                    default: "On"
+                    description: State specifies whether DNSSEC is enabled, and what
+                      mode it is in
+                    enum:
+                    - "On"
+                    - "Off"
+                    - Transfer
+                    type: string
+                type: object
+              projectID:
+                description: ProjectID id of the gcp project
+                example: my-project
+                type: string
+              public:
+                default: false
+                description: PrivateZone defines if the zone is private or public
+                type: boolean
+            required:
+            - dnsName
+            - projectID
+            - public
+            type: object
+          status:
+            description: CloudDnsZoneStatus defines the observed state of CloudDnsZone
+            properties:
+              nameservers:
+                description: |-
+                  INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+                  Important: Run "make" to regenerate code after modifying this file
+                items:
+                  type: string
+                type: array
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
