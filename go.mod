@@ -8,6 +8,7 @@ require (
 	cloud.google.com/go/iam v1.1.8
 	cloud.google.com/go/longrunning v0.5.7
 	cloud.google.com/go/run v1.3.7
+	github.com/googleapis/gax-go/v2 v2.12.4
 	github.com/onsi/ginkgo/v2 v2.19.0
 	github.com/onsi/gomega v1.33.1
 	google.golang.org/api v0.183.0
@@ -46,7 +47,6 @@ require (
 	github.com/google/s2a-go v0.1.7 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
-	github.com/googleapis/gax-go/v2 v2.12.4 // indirect
 	github.com/imdario/mergo v0.3.6 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
