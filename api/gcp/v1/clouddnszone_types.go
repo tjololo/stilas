@@ -37,7 +37,7 @@ type CloudDnsZoneSpec struct {
 	DnsName string `json:"dnsName"`
 	//PrivateZone defines if the zone is private or public
 	// +kubebuilder:default=false
-	PrivateZone bool `json:"public"`
+	PrivateZone bool `json:"privateZone"`
 	//DnsSecSpec defines the DNSSEC configuration for the zone
 	// +kubebuilder:validation:Optional
 	DnsSecSpec DnsSecSpec `json:"dnsSecSpec,omitempty"`
@@ -63,6 +63,9 @@ type CloudDnsZoneStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
 	// +kubebuilder:validation:Optional
 	Nameservers []string `json:"nameservers,omitempty"`
+	// +kubebuilder:validation:Optional
+	// OperationId is the id of the operation that is currently running, empty if no ongioing operation
+	Operation string `json:"operation,omitempty"`
 }
 
 // +kubebuilder:object:root=true

@@ -40,6 +40,10 @@ func (m *mockCloudDnsService) GetZone(_ context.Context, _ string, _ string) (*g
 	}, nil
 }
 
+func (m *mockCloudDnsService) GetOperation(_ context.Context, _ string, _ string, _ string) (*gcpdns.Operation, error) {
+	return &gcpdns.Operation{Status: "DONE"}, nil
+}
+
 func (m *mockCloudDnsService) CreateZone(_ context.Context, _ string, _ *gcpdns.ManagedZone) (*gcpdns.ManagedZone, error) {
 	return &gcpdns.ManagedZone{
 		Name:    "test-zone",
@@ -47,8 +51,19 @@ func (m *mockCloudDnsService) CreateZone(_ context.Context, _ string, _ *gcpdns.
 	}, nil
 }
 
+func (m *mockCloudDnsService) UpdateZone(_ context.Context, _ string, _ string, _ *gcpdns.ManagedZone) (*gcpdns.Operation, error) {
+	return &gcpdns.Operation{Status: "DONE"}, nil
+}
+
 func (m *mockCloudDnsService) DeleteZone(_ context.Context, _ string, _ string) error {
 	return nil
+}
+
+func (m *mockCloudDnsService) GetRecord(_ context.Context, _ string, _ string, _ string, _ string) (*gcpdns.ResourceRecordSet, error) {
+	return &gcpdns.ResourceRecordSet{
+		Name: "test-record",
+		Type: "test-type",
+	}, nil
 }
 
 var _ = Describe("CloudDnsZone Controller", func() {

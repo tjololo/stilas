@@ -136,7 +136,7 @@ func main() {
 	if err = (&gcpcontroller.CloudDnsZoneReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
-		CloudDnsService: &gcp.CloudDnsServiceImpl{
+		CloudDnsService: &gcp.GcpCloudDnsService{
 			NewService: gcpdns.NewService,
 		},
 	}).SetupWithManager(mgr); err != nil {

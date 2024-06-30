@@ -66,18 +66,18 @@ spec:
                     - Transfer
                     type: string
                 type: object
+              privateZone:
+                default: false
+                description: PrivateZone defines if the zone is private or public
+                type: boolean
               projectID:
                 description: ProjectID id of the gcp project
                 example: my-project
                 type: string
-              public:
-                default: false
-                description: PrivateZone defines if the zone is private or public
-                type: boolean
             required:
             - dnsName
+            - privateZone
             - projectID
-            - public
             type: object
           status:
             description: CloudDnsZoneStatus defines the observed state of CloudDnsZone
@@ -89,6 +89,10 @@ spec:
                 items:
                   type: string
                 type: array
+              operation:
+                description: OperationId is the id of the operation that is currently
+                  running, empty if no ongioing operation
+                type: string
             type: object
         type: object
     served: true

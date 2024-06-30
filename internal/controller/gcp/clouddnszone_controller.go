@@ -19,6 +19,7 @@ package gcp
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"google.golang.org/api/dns/v2"
 	"google.golang.org/api/googleapi"
@@ -86,8 +87,34 @@ func (r *CloudDnsZoneReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	logger.Info(fmt.Sprintf("Reconciling CloudDnsZone: %+v", dnsZone.Spec))
-	_, err := r.CloudDnsService.GetZone(ctx, dnsZone.Spec.ProjectID, dnsZone.GetCloudDnsZoneFullName())
-
+	if dnsZone.Status.Operation != "" {
+		op, err := r.CloudDnsService.GetOperation(ctx, dnsZone.Spec.ProjectID, dnsZone.GetCloudDnsZoneFullName(), dnsZone.Status.Operation)
+		if err != nil {
+			logger.Error(err, "unable to get Operation")
+			return ctrl.Result{}, err
+		}
+		if op.Status == "DONE" {
+			dnsZone.Status.Operation = ""
+			return ctrl.Result{}, r.Client.Status().Update(ctx, &dnsZone)
+		}
+		return ctrl.Result{}, nil
+	}
+	zone, err := r.CloudDnsService.GetZone(ctx, dnsZone.Spec.ProjectID, dnsZone.GetCloudDnsZoneFullName())
+	if err == nil && dnsZoneUpdated(&dnsZone, zone) {
+		logger.Info("ManagedZone updated, updating.")
+		zone.DnssecConfig.State = dnsZone.Spec.DnsSecSpec.State
+		op, err := r.CloudDnsService.UpdateZone(ctx, dnsZone.Spec.ProjectID, dnsZone.GetCloudDnsZoneFullName(), zone)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+		if op.Status == "DONE" {
+			dnsZone.Status.Nameservers = zone.NameServers
+			return ctrl.Result{}, r.Client.Status().Update(ctx, &dnsZone)
+		} else {
+			dnsZone.Status.Operation = op.Id
+			return ctrl.Result{}, r.Client.Status().Update(ctx, &dnsZone)
+		}
+	}
 	if err != nil && !googleapi.IsNotModified(err) {
 		apiErr := gcp.ApiErrorFromErr(err)
 		if apiErr != nil && apiErr.HTTPCode() == 404 {
@@ -134,4 +161,8 @@ func (r *CloudDnsZoneReconciler) addFinalizer(ctx context.Context, dnsZone *gcpv
 		return err
 	}
 	return nil
+}
+
+func dnsZoneUpdated(new *gcpv1.CloudDnsZone, current *dns.ManagedZone) bool {
+	return !strings.EqualFold(new.Spec.DnsSecSpec.State, current.DnssecConfig.State)
 }
