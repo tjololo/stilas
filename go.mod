@@ -2,7 +2,7 @@ module github.com/tjololo/stilas
 
 go 1.22.0
 
-toolchain go1.22.4
+toolchain go1.23.2
 
 require (
 	cloud.google.com/go/iam v1.1.9
