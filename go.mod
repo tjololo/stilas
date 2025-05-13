@@ -11,7 +11,7 @@ require (
 	github.com/googleapis/gax-go/v2 v2.12.5
 	github.com/onsi/ginkgo/v2 v2.19.0
 	github.com/onsi/gomega v1.33.1
-	google.golang.org/api v0.186.0
+	google.golang.org/api v0.233.0
 	google.golang.org/grpc v1.64.0
 	k8s.io/apimachinery v0.30.2
 	k8s.io/client-go v0.30.2
