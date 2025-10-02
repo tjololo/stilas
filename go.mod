@@ -9,7 +9,7 @@ require (
 	cloud.google.com/go/longrunning v0.5.8
 	cloud.google.com/go/run v1.3.8
 	github.com/googleapis/gax-go/v2 v2.12.5
-	github.com/onsi/ginkgo/v2 v2.19.0
+	github.com/onsi/ginkgo/v2 v2.26.0
 	github.com/onsi/gomega v1.33.1
 	google.golang.org/api v0.186.0
 	google.golang.org/grpc v1.64.0
