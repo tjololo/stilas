@@ -7,7 +7,7 @@ toolchain go1.22.4
 require (
 	cloud.google.com/go/iam v1.1.9
 	cloud.google.com/go/longrunning v0.5.8
-	cloud.google.com/go/run v1.3.8
+	cloud.google.com/go/run v1.12.1
 	github.com/googleapis/gax-go/v2 v2.12.5
 	github.com/onsi/ginkgo/v2 v2.19.0
 	github.com/onsi/gomega v1.33.1
